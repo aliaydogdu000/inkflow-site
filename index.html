@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>InkFlow — Dövme stüdyosu yönetimi</title>
+<meta name="description" id="metaDescription" content="Randevu, müşteri, onam formu, gider ve komisyon takibi tek uygulamada. Dövme stüdyoları için tasarlandı." />
+<meta property="og:title" content="InkFlow — Dövme stüdyosu yönetimi" />
+<meta property="og:description" content="Randevu, müşteri, onam formu, gider ve komisyon takibi tek uygulamada." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://inkflowpro.studio" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230E0E0E'/%3E%3Cg fill='none' stroke='%23FFFFFF' stroke-width='5' stroke-linecap='round'%3E%3Cpath d='M12 50c8-6 14-7 22-8s16-4 20-10'/%3E%3Cpath d='M40 14l10 10-16 16-10-10z' fill='%23FFFFFF'/%3E%3C/g%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #F4F4F2;
+    --card: #FFFFFF;
+    --tile: #F0F0EE;
+    --line: #E7E7E4;
+    --ink: #111111;
+    --on-ink: #FFFFFF;
+    --muted: #6B6B68;
+    --faint: #A3A39F;
+    --success: #2B7349;
+    --success-bg: #E8F4EC;
+    --danger: #C0362C;
+    --danger-bg: #FBEAE8;
+    --font: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --shadow: 0 24px 60px rgba(0, 0, 0, 0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0B0B0B;
+      --card: #161616;
+      --tile: #222222;
+      --line: #262626;
+      --ink: #F2F2F0;
+      --on-ink: #0B0B0B;
+      --muted: #9A9A96;
+      --faint: #5C5C59;
+      --success: #7FCB98;
+      --success-bg: #16301F;
+      --danger: #F08A80;
+      --danger-bg: #3A1A17;
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  .wrap { width: 100%; max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+  .eyebrow::before { content: "// "; color: var(--faint); }
+
+  /* Header */
+  .top {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 60px; }
+  .logo { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; text-decoration: none; }
+  .logo .mark { width: 30px; height: 30px; border-radius: 9px; background: var(--ink); display: inline-flex; align-items: center; justify-content: center; }
+  .logo svg { display: block; }
+  .menu { display: flex; gap: 22px; font-size: 14px; color: var(--muted); }
+  .menu a { text-decoration: none; }
+  .menu a:hover { color: var(--ink); }
+  .top-right { display: flex; align-items: center; gap: 10px; }
+  .langbar { display: flex; gap: 2px; }
+  .langbar button {
+    background: none; border: 1px solid transparent; color: var(--muted); cursor: pointer;
+    font-size: 13px; font-weight: 500; padding: 5px 9px; border-radius: 8px; font-family: inherit;
+  }
+  .langbar button.active { color: var(--ink); background: var(--card); border-color: var(--line); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 0 18px; height: 44px; border-radius: 12px; border: 1px solid transparent;
+    background: var(--ink); color: var(--on-ink); font-size: 14px; font-weight: 500;
+    font-family: inherit; cursor: pointer; text-decoration: none; white-space: nowrap;
+  }
+  .btn.small { height: 38px; padding: 0 14px; font-size: 13px; }
+  .btn.ghost { background: var(--card); color: var(--ink); border-color: var(--line); }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+
+  /* Hero */
+  .hero { padding: 72px 0 24px; }
+  .hero .wrap { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: center; }
+  h1 { font-size: 52px; line-height: 1.04; margin: 0 0 18px; letter-spacing: -0.035em; font-weight: 600; }
+  .lede { font-size: 18px; color: var(--muted); margin: 0 0 28px; max-width: 520px; }
+  .cta-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .cta-note { font-size: 13px; color: var(--muted); margin: 14px 0 0; }
+  .phones { position: relative; display: flex; justify-content: center; gap: 20px; min-height: 520px; }
+  .phone {
+    width: 230px; border-radius: 36px; background: var(--card); border: 1px solid var(--line);
+    padding: 8px; box-shadow: var(--shadow); flex-shrink: 0;
+  }
+  .phone img { display: block; width: 100%; height: auto; border-radius: 28px; }
+  .phones .phone:nth-child(2) { margin-top: 64px; }
+
+  /* Pain strip */
+  .pains { padding: 48px 0; }
+  .pains .wrap { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .pains .lead { width: 100%; font-size: 15px; color: var(--muted); margin: 0 0 10px; }
+  .pill {
+    font-size: 13px; color: var(--muted); border: 1px solid var(--line); background: var(--card);
+    border-radius: 999px; padding: 6px 12px; text-decoration: line-through; text-decoration-color: var(--faint);
+  }
+  .pill.keep { text-decoration: none; background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+
+  /* Feature sections */
+  section.feature { padding: 64px 0; border-top: 1px solid var(--line); }
+  section.feature .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+  section.feature.flip .copy { order: 2; }
+  h2 { font-size: 32px; line-height: 1.12; letter-spacing: -0.03em; font-weight: 600; margin: 0 0 12px; }
+  .sub { font-size: 16px; color: var(--muted); margin: 0 0 24px; }
+  .points { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 14px; }
+  .points li { display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: start; }
+  .points .ico {
+    width: 36px; height: 36px; border-radius: 10px; background: var(--tile); color: var(--ink);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .points .ico svg { width: 18px; height: 18px; }
+  .points strong { display: block; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  .points span { font-size: 14px; color: var(--muted); }
+  .shot { display: flex; justify-content: center; gap: 16px; }
+  .shot .phone { width: 250px; }
+  .shot.pair .phone:nth-child(2) { margin-top: 48px; }
+
+  /* Card grids */
+  .grid { padding: 64px 0; border-top: 1px solid var(--line); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 24px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+  .card .ico { width: 36px; height: 36px; border-radius: 10px; background: var(--tile); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+  .card .ico svg { width: 18px; height: 18px; }
+  .card h3 { font-size: 15px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .card p { font-size: 14px; color: var(--muted); margin: 0; }
+  .card .num { font-family: var(--mono); font-size: 11px; color: var(--faint); margin-bottom: 10px; }
+
+  /* Pricing + signup */
+  .pricing { padding: 64px 0; border-top: 1px solid var(--line); }
+  .pricing .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+  .price-card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 24px; }
+  .price-card .big { font-size: 40px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; margin: 10px 0 8px; }
+  .price-card .big small { font-size: 15px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+  .price-card ul { list-style: none; padding: 0; margin: 18px 0 0; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+  .price-card li { display: flex; gap: 10px; align-items: flex-start; }
+  .price-card li svg { flex-shrink: 0; margin-top: 4px; }
+  .status { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 999px; background: var(--success-bg); color: var(--success); }
+  .status .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .signup { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 24px; }
+  .signup label { display: block; font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+  .signup label + label { margin-top: 16px; }
+  .signup input {
+    width: 100%; padding: 13px 14px; background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; color: var(--ink); font-size: 15px; font-family: inherit;
+  }
+  .signup input::placeholder { color: var(--faint); }
+  .signup input:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+  .honeypot { position: absolute; left: -9999px; top: -9999px; }
+  .signup .btn { width: 100%; margin-top: 20px; height: 50px; }
+  .fineprint { font-size: 12px; color: var(--muted); margin: 12px 0 0; text-align: center; }
+  .message { margin-top: 16px; padding: 12px 14px; border-radius: 12px; font-size: 14px; text-align: center; display: none; }
+  .message.success { display: block; background: var(--success-bg); color: var(--success); }
+  .message.error { display: block; background: var(--danger-bg); color: var(--danger); }
+
+  /* FAQ */
+  .faq { padding: 64px 0; border-top: 1px solid var(--line); }
+  .faq .wrap { display: grid; grid-template-columns: 1fr 2fr; gap: 40px; }
+  details { border-top: 1px solid var(--line); padding: 16px 0; }
+  details:last-child { border-bottom: 1px solid var(--line); }
+  summary { cursor: pointer; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; color: var(--faint); font-weight: 400; }
+  details[open] summary::after { content: "–"; }
+  details p { margin: 10px 0 0; font-size: 15px; color: var(--muted); max-width: 60ch; }
+
+  footer { border-top: 1px solid var(--line); padding: 32px 0 48px; font-size: 13px; color: var(--muted); }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: center; }
+  footer .links { display: flex; gap: 18px; }
+
+  @media (max-width: 860px) {
+    .menu { display: none; }
+    .hero { padding: 44px 0 16px; }
+    .hero .wrap, section.feature .wrap, .pricing .wrap, .faq .wrap { grid-template-columns: 1fr; gap: 32px; }
+    section.feature.flip .copy { order: 0; }
+    h1 { font-size: 36px; }
+    h2 { font-size: 26px; }
+    .phones { min-height: 0; gap: 12px; }
+    .phone, .shot .phone { width: min(44vw, 230px); }
+    .phones .phone:nth-child(2), .shot.pair .phone:nth-child(2) { margin-top: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="InkFlow">
+      <span class="mark" aria-hidden="true">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19c3-2.5 5.5-3 8.5-3.4S18.5 14 21 11.5"/><path d="M15 4l5 5-7 7-5-5z"/>
+        </svg>
+      </span>
+      <span>InkFlow</span>
+    </a>
+    <nav class="menu" aria-label="Sayfa içi">
+      <a href="#takvim" data-en="Calendar">Takvim</a>
+      <a href="#randevu-linki" data-en="Booking link">Randevu linki</a>
+      <a href="#onam" data-en="Consent">Onam</a>
+      <a href="#kasa" data-en="Finance">Kasa</a>
+      <a href="#sss" data-en="FAQ">SSS</a>
+    </nav>
+    <div class="top-right">
+      <div class="langbar">
+        <button type="button" id="langTr">TR</button>
+        <button type="button" id="langEn">EN</button>
+      </div>
+      <a class="btn small" href="#erken-erisim" data-en="Early access">Erken erişim</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow" data-en="For tattoo studios">Dövme stüdyoları için</p>
+        <h1 data-en="Your studio’s books, in your pocket.">Stüdyonun defteri artık telefonunda.</h1>
+        <p class="lede" data-en="Appointments, client history, consent forms, expenses and artist commission — in one app instead of scattered notebooks and WhatsApp threads.">Randevu, müşteri geçmişi, onam formu, gider ve sanatçı komisyonu — dağınık not defterleri ve WhatsApp mesajları yerine tek bir uygulamada.</p>
+        <div class="cta-row">
+          <a class="btn" href="#erken-erisim" data-en="Join early access">Erken erişime katıl</a>
+          <a class="btn ghost" href="#takvim" data-en="See what’s inside">Neler var</a>
+        </div>
+        <p class="cta-note" data-en="14-day free trial, no credit card. Currently in closed beta on iOS.">14 gün ücretsiz deneme, kredi kartı gerekmez. Şu an iOS'ta kapalı beta.</p>
+      </div>
+      <div class="phones" aria-hidden="true">
+        <div class="phone"><img src="img/screens/home.webp" alt="" width="780" height="1688" /></div>
+        <div class="phone"><img src="img/screens/calendar-dark.webp" alt="" width="780" height="1688" /></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pains">
+    <div class="wrap">
+      <p class="lead" data-en="What you can stop keeping track of by hand:">Elle takip etmeyi bırakabileceklerin:</p>
+      <span class="pill" data-en="the appointment notebook">randevu defteri</span>
+      <span class="pill" data-en="the WhatsApp group">WhatsApp grubu</span>
+      <span class="pill" data-en="the deposit note on your phone">telefondaki kapora notu</span>
+      <span class="pill" data-en="paper consent forms">kâğıt onam formu</span>
+      <span class="pill" data-en="the ink expiry list">mürekkep SKT listesi</span>
+      <span class="pill" data-en="the month-end spreadsheet">ay sonu Excel'i</span>
+      <span class="pill keep" data-en="one app">tek uygulama</span>
+    </div>
+  </section>
+
+  <section class="feature" id="takvim">
+    <div class="wrap">
+      <div class="copy">
+        <p class="eyebrow" data-en="Calendar">Takvim</p>
+        <h2 data-en="The day is clear before it starts.">Gün, başlamadan belli olsun.</h2>
+        <p class="sub" data-en="Month, two-week or week view; every appointment with its status, artist and payment at a glance.">Ay, iki hafta ya da hafta görünümü; her randevu durumu, sanatçısı ve ödemesiyle tek bakışta.</p>
+        <ul class="points">
+          <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></span><div><strong data-en="Status and payment on the card">Durum ve ödeme kartın üstünde</strong><span data-en="Pending, confirmed, completed, no-show; paid, deposit or partial — no need to open the detail.">Bekliyor, onaylandı, tamamlandı, gelmedi; ödendi, kapora ya da kısmi — detayı açmadan görünür.</span></div></li>
+          <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6"/><path d="M16 4a4 4 0 0 1 0 8M22 21c0-3-1.5-5-4-5.7"/></svg></span><div><strong data-en="Filter by artist">Sanatçıya göre süz</strong><span data-en="Each artist sees their own day; the owner sees the whole studio.">Her sanatçı kendi gününü, sahip bütün stüdyoyu görür.</span></div></li>
+          <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg></span><div><strong data-en="Automatic reminders">Otomatik hatırlatma</strong><span data-en="The client gets an email 24 hours before, and aftercare instructions when the session is marked complete.">Müşteriye 24 saat önce hatırlatma, seans tamamlanınca bakım talimatı e-postası gider.</span></div></li>
+          <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span><div><strong data-en="Reference photo on the appointment">Randevuda referans fotoğrafı</strong><span data-en="Taken from the booking request or added later; stored privately.">Randevu talebinden gelir ya da sonradan eklenir; özel depoda saklanır.</span></div></li>
+        </ul>
+      </div>
+      <div class="shot"><div class="phone"><img src="img/screens/calendar.webp" alt="InkFlow takvim ekranı: Ekim 2026, günün randevuları durum etiketleriyle" width="780" height="1688" loading="lazy" /></div></div>
+    </div>
+  </section>
+
+  <section class="feature flip" id="randevu-linki">
+    <div class="wrap">
+      <div class="copy">
+        <p class="eyebrow" data-en="Public booking link">Genel randevu linki</p>
+        <h2 data-en="Requests land in the app, not in your DMs.">Talepler DM'e değil, uygulamaya düşsün.</h2>
+        <p class="sub" data-en="Every studio gets its own booking page and QR code. Put the link in your Instagram bio; approve or decline from the Inbox.">Her stüdyonun kendi randevu sayfası ve QR kodu var. Linki Instagram biyografisine koy; gelen talebi Inbox'tan onayla ya da reddet.</p>
+        <ul class="points">
+          <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></span><div><strong data-en="No app for the client">Müşteri uygulama indirmez</strong><span data-en="A plain web page: name, phone, description, preferred date, optional photo. Thirty seconds.">Düz bir web sayfası: ad, telefon, açıklama, tercih edilen tarih, isteğe bağlı fotoğraf. Otuz saniye.</span></div></li>
+          <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span><div><strong data-en="Know which channel brings clients">Hangi kanal müşteri getiriyor, bil</strong><span data-en="Tag the link per channel — Instagram, WhatsApp, QR on the door — and see the source on each request.">Linki kanal başına etiketle — Instagram, WhatsApp, kapıdaki QR — her talepte kaynağı gör.</span></div></li>
+          <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></span><div><strong data-en="Push the moment it arrives">Geldiği an bildirim</strong><span data-en="Approving creates the customer and the appointment in one tap.">Onaylamak müşteriyi ve randevuyu tek dokunuşla oluşturur.</span></div></li>
+          <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg></span><div><strong data-en="Spam-proof by design">Spam'e kapalı</strong><span data-en="Hidden honeypot field and per-studio rate limiting; the page holds no API keys.">Gizli bal küpü alanı ve stüdyo başına hız sınırı; sayfada hiçbir API anahtarı yok.</span></div></li>
+        </ul>
+      </div>
+      <div class="shot"><div class="phone"><img src="img/screens/inbox.webp" alt="InkFlow Talepler ekranı: iki randevu talebi, onayla ve reddet düğmeleri" width="780" height="1688" loading="lazy" /></div></div>
+    </div>
+  </section>
+
+  <section class="grid" id="onam">
+    <div class="wrap">
+      <p class="eyebrow" data-en="Digital consent">Dijital onam</p>
+      <h2 data-en="Signed on the phone, filed forever.">Telefonda imzalanır, kaybolmaz.</h2>
+      <p class="sub" data-en="Four templates, each with the consent checkbox your region requires — KVKK, GDPR or CCPA — and a finger signature. The intake form is the must-have; the appointment card shows how many of four are done.">Dört şablon, her biri bölgenin gerektirdiği onay kutusuyla — KVKK, GDPR ya da CCPA — ve parmakla imza. Kabul formu zorunlu olan; randevu kartı dördünün kaçının dolduğunu gösterir.</p>
+      <div class="cards">
+        <div class="card"><div class="num">01</div><h3 data-en="Health &amp; intake">Sağlık ve kabul</h3><p data-en="Allergies, medication, conditions; the one form every session needs.">Alerji, ilaç, rahatsızlık; her seansın ihtiyaç duyduğu tek form.</p></div>
+        <div class="card"><div class="num">02</div><h3 data-en="Guardian consent">Veli / vasi onamı</h3><p data-en="For clients under the legal age, with the guardian’s signature.">Yasal yaşın altındaki müşteriler için, velinin imzasıyla.</p></div>
+        <div class="card"><div class="num">03</div><h3 data-en="Photo release">Fotoğraf izni</h3><p data-en="Permission to use the finished work on social media.">Biten işin sosyal medyada kullanılması için izin.</p></div>
+        <div class="card"><div class="num">04</div><h3 data-en="Aftercare acknowledgement">Bakım onayı</h3><p data-en="The client confirms they received aftercare instructions; the email goes out automatically too.">Müşteri bakım talimatını aldığını onaylar; e-postası da kendiliğinden gider.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="feature" id="kasa">
+    <div class="wrap">
+      <div class="copy">
+        <p class="eyebrow" data-en="Finance">Kasa</p>
+        <h2 data-en="Who owes what, without a spreadsheet.">Kim ne borçlu, Excel'siz.</h2>
+        <p class="sub" data-en="Deposit, partial or full payment on the appointment; the balance follows the client. Expenses by category; revenue, occupancy and no-show rate on one screen.">Kapora, kısmi ya da tam ödeme randevuya işlenir; bakiye müşteriyi izler. Giderler kategoriyle; ciro, doluluk ve gelmeme oranı tek ekranda.</p>
+        <ul class="points">
+          <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/></svg></span><div><strong data-en="Balance on the customer card">Müşteri kartında bakiye</strong><span data-en="Agreed, paid and outstanding — the deposit is never counted twice.">Anlaşılan, ödenen ve kalan — kapora iki kez sayılmaz.</span></div></li>
+          <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16"/><path d="M8 15l4-5 3 3 5-7"/></svg></span><div><strong data-en="Owner-only reports">Yalnız sahibin gördüğü raporlar</strong><span data-en="Six-month revenue trend, busy days, top inks. Artists never see the studio’s total.">Altı aylık ciro trendi, yoğun günler, en çok kullanılan mürekkepler. Sanatçılar stüdyo toplamını görmez.</span></div></li>
+          <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M7 7h7a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h8"/></svg></span><div><strong data-en="Services with prices">Fiyatlı hizmet listesi</strong><span data-en="Pick a service on the appointment and the agreed amount fills itself; edit it when you negotiate.">Randevuda hizmeti seç, anlaşılan tutar kendiliğinden dolsun; pazarlıkta elle değiştir.</span></div></li>
+        </ul>
+      </div>
+      <div class="shot pair">
+        <div class="phone"><img src="img/screens/finance.webp" alt="InkFlow Kasa ekranı: dönem cirosu, doluluk ve ciro trendi" width="780" height="1688" loading="lazy" /></div>
+        <div class="phone"><img src="img/screens/customers.webp" alt="InkFlow Müşteriler listesi" width="780" height="1688" loading="lazy" /></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="feature flip" id="ekip">
+    <div class="wrap">
+      <div class="copy">
+        <p class="eyebrow" data-en="Inventory &amp; team">Envanter ve ekip</p>
+        <h2 data-en="Which lot went into which session.">Hangi lot hangi seansa girdi.</h2>
+        <p class="sub" data-en="Ink with brand, lot number and expiry; a warning badge before it runs out of date and a block when it has. Invite artists by email, set roles and working hours.">Mürekkep marka, lot numarası ve SKT ile; süresi yaklaşınca uyarı rozeti, geçince engel. Sanatçıyı e-postayla davet et, rol ve çalışma saatlerini belirle.</p>
+        <ul class="points">
+          <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v10l-7 4-7-4V7z"/><path d="M12 11l7-4M12 11v10M12 11L5 7"/></svg></span><div><strong data-en="REACH traceability">REACH izlenebilirliği</strong><span data-en="Inks are linked to the session they were used in; the usage report comes for free.">Mürekkep kullanıldığı seansa bağlanır; kullanım raporu kendiliğinden çıkar.</span></div></li>
+          <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M12 12v4"/></svg></span><div><strong data-en="Owner and artist roles">Sahip ve sanatçı rolleri</strong><span data-en="Invite, promote or remove; finance is owner-only, everything else is shared.">Davet et, yükselt, çıkar; kasa yalnız sahibe açık, geri kalanı ortak.</span></div></li>
+          <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><strong data-en="Working hours per artist">Sanatçı başına çalışma saati</strong><span data-en="Weekly schedule on the artist card.">Sanatçı kartında haftalık program.</span></div></li>
+        </ul>
+      </div>
+      <div class="shot pair">
+        <div class="phone"><img src="img/screens/inventory.webp" alt="InkFlow Envanter ekranı: mürekkepler lot ve SKT bilgisiyle" width="780" height="1688" loading="lazy" /></div>
+        <div class="phone"><img src="img/screens/staff.webp" alt="InkFlow Personel ekranı" width="780" height="1688" loading="lazy" /></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid" id="uyum">
+    <div class="wrap">
+      <p class="eyebrow" data-en="Data &amp; compliance">Veri ve uyum</p>
+      <h2 data-en="Built for three markets from day one.">İlk günden üç pazar için.</h2>
+      <div class="cards">
+        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg></div><h3>KVKK · GDPR · CCPA</h3><p data-en="The consent text and checkbox follow the studio’s region; the right-to-erasure flow anonymises a client in one step and logs it.">Onam metni ve kutusu stüdyonun bölgesine göre; silme hakkı akışı müşteriyi tek adımda anonimleştirir ve kayda geçer.</p></div>
+        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div><h3 data-en="Isolated per studio">Stüdyo başına yalıtım</h3><p data-en="Row-level security in the database: a studio can only ever read its own rows. Signatures and photos live in a private bucket with short-lived links.">Veritabanında satır düzeyi güvenlik: bir stüdyo yalnız kendi kayıtlarını okuyabilir. İmza ve fotoğraflar özel depoda, kısa ömürlü bağlantıyla.</p></div>
+        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></div><h3 data-en="Turkish and English">Türkçe ve İngilizce</h3><p data-en="App, emails and booking page in both; Turkish lira, euro and dollar.">Uygulama, e-postalar ve randevu sayfası iki dilde; lira, euro ve dolar.</p></div>
+        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 12h16M12 4v16"/></svg></div><h3 data-en="No ads, no selling data">Reklam yok, veri satışı yok</h3><p data-en="The subscription is the only business model.">Tek gelir modeli abonelik.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pricing" id="erken-erisim">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow" data-en="Pricing">Fiyatlandırma</p>
+        <h2 data-en="Try it for 14 days first.">Önce 14 gün dene.</h2>
+        <div class="price-card">
+          <span class="status"><span class="dot"></span><span data-en="Closed beta">Kapalı beta</span></span>
+          <div class="big">14 <small data-en="days free">gün ücretsiz</small></div>
+          <p class="sub" style="margin:0" data-en="No credit card. One subscription per studio, however many artists. Pricing is announced at public launch; early-access studios hear it first.">Kredi kartı gerekmez. Stüdyo başına tek abonelik, sanatçı sayısı fark etmez. Fiyat genel yayında açıklanacak; erken erişimdeki stüdyolar ilk duyan olur.</p>
+          <ul>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg><span data-en="Every feature on this page, no tiers">Bu sayfadaki her özellik, kademe yok</span></li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg><span data-en="Reminder and aftercare emails included">Hatırlatma ve bakım e-postaları dahil</span></li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg><span data-en="Cancel from the App Store at any time">İstediğin an App Store'dan iptal</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="signup">
+        <p class="eyebrow" data-en="Early access">Erken erişim</p>
+        <form id="waitlistForm">
+          <label id="labelEmail" for="email">E-posta</label>
+          <input type="email" id="email" required maxlength="320" autocomplete="email" placeholder="ornek@studyonuz.com" />
+          <label id="labelStudio" for="studioName">Stüdyo adı (isteğe bağlı)</label>
+          <input type="text" id="studioName" maxlength="120" autocomplete="organization" />
+          <!-- Honeypot: hidden from real users, bots fill every field. -->
+          <label class="honeypot" for="website">Website</label>
+          <input class="honeypot" type="text" id="website" tabindex="-1" autocomplete="off" />
+          <button type="submit" id="submitBtn" class="btn">Erken erişime katıl</button>
+          <p class="fineprint" id="fineprint">Sadece açılışta haber veriyoruz. Spam yok, istediğiniz an çıkabilirsiniz.</p>
+          <div class="message" id="message"></div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="faq" id="sss">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow" data-en="FAQ">Sık sorulanlar</p>
+        <h2 data-en="Before you ask.">Sormadan önce.</h2>
+        <p class="sub" data-en="Anything else? Leave your email above and ask in the studio name field.">Başka bir şey mi? Yukarıya e-postanı bırak, sorunu stüdyo adı alanına yaz.</p>
+      </div>
+      <div>
+        <details open>
+          <summary data-en="Do my clients need to install anything?">Müşterilerimin bir şey kurması gerekiyor mu?</summary>
+          <p data-en="No. They open your booking link in a browser, fill in four fields and send it. Reminders and aftercare arrive by email. The app is only for the studio and its artists.">Hayır. Randevu linkini tarayıcıda açar, dört alanı doldurur, gönderir. Hatırlatma ve bakım talimatı e-postayla gelir. Uygulama yalnız stüdyo ve sanatçıları için.</p>
+        </details>
+        <details>
+          <summary data-en="Can artists see the studio’s revenue or each other’s?">Sanatçılar stüdyonun cirosunu ya da birbirininkini görür mü?</summary>
+          <p data-en="No. The Finance tab exists only for the owner role. Artists see the calendar, clients, inventory and the team list.">Hayır. Kasa sekmesi yalnız sahip rolünde var. Sanatçılar takvimi, müşterileri, envanteri ve ekip listesini görür.</p>
+        </details>
+        <details>
+          <summary data-en="How does the trial work?">Deneme nasıl işliyor?</summary>
+          <p data-en="Every new studio starts with 14 days and no card. When it ends the data stays; the app asks you to subscribe before you continue.">Her yeni stüdyo 14 günle, kartsız başlar. Süre bitince veri silinmez; devam etmeden önce abonelik ister.</p>
+        </details>
+        <details>
+          <summary data-en="Where is my data and can I delete it?">Verim nerede, silebilir miyim?</summary>
+          <p data-en="In a Supabase project with row-level security; each studio is isolated at the database. A client can be anonymised from their card in one step, and that action is logged.">Satır düzeyi güvenlikli bir Supabase projesinde; her stüdyo veritabanında yalıtılmış. Bir müşteri kartından tek adımda anonimleştirilir ve bu işlem kayda geçer.</p>
+        </details>
+        <details>
+          <summary data-en="Which platforms?">Hangi platformlar?</summary>
+          <p data-en="iOS first, through TestFlight during the closed beta. Join the early-access list and you will hear about Android and the public launch.">Önce iOS, kapalı betada TestFlight üzerinden. Erken erişim listesine yazılırsan Android ve genel yayını ilk sen duyarsın.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div id="copyright">© 2026 InkFlow</div>
+    <div class="links">
+      <a href="/terms.html" id="linkTerms">Kullanım Koşulları</a>
+      <a href="/privacy.html" id="linkPrivacy">Gizlilik Politikası</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var FUNCTIONS_BASE = 'https://qzchujgzsurrlgjwungd.supabase.co/functions/v1';
+
+  // Section copy is bilingual inline: the Turkish text is the element's
+  // content, the English one sits in data-en. Form and status strings that
+  // the script writes itself live here.
+  var translations = {
+    tr: {
+      htmlLang: 'tr',
+      metaDescription: 'Randevu, müşteri, onam formu, gider ve komisyon takibi tek uygulamada. Dövme stüdyoları için tasarlandı.',
+      labelEmail: 'E-posta',
+      labelStudio: 'Stüdyo adı (isteğe bağlı)',
+      emailPlaceholder: 'ornek@studyonuz.com',
+      submit: 'Erken erişime katıl',
+      sending: 'Gönderiliyor…',
+      fineprint: 'Sadece açılışta haber veriyoruz. Spam yok, istediğiniz an çıkabilirsiniz.',
+      success: 'Listeye eklendiniz. Sıra size gelince yazacağız.',
+      invalidEmail: 'Geçerli bir e-posta adresi girin.',
+      tooMany: 'Çok fazla deneme yaptınız. Lütfen biraz sonra tekrar deneyin.',
+      genericError: 'Bir hata oluştu. Lütfen tekrar deneyin.',
+      linkTerms: 'Kullanım Koşulları',
+      linkPrivacy: 'Gizlilik Politikası'
+    },
+    en: {
+      htmlLang: 'en',
+      metaDescription: 'Appointments, clients, consent forms, expenses and artist commission in one app. Built for tattoo studios.',
+      labelEmail: 'Email',
+      labelStudio: 'Studio name (optional)',
+      emailPlaceholder: 'you@yourstudio.com',
+      submit: 'Join early access',
+      sending: 'Sending…',
+      fineprint: 'We only write when we launch. No spam, unsubscribe any time.',
+      success: 'You’re on the list. We’ll write when it’s your turn.',
+      invalidEmail: 'Please enter a valid email address.',
+      tooMany: 'Too many attempts. Please try again in a little while.',
+      genericError: 'Something went wrong. Please try again.',
+      linkTerms: 'Terms of Use',
+      linkPrivacy: 'Privacy Policy'
+    }
+  };
+
+  var form = document.getElementById('waitlistForm');
+  var emailInput = document.getElementById('email');
+  var studioInput = document.getElementById('studioName');
+  var honeypot = document.getElementById('website');
+  var submitBtn = document.getElementById('submitBtn');
+  var messageEl = document.getElementById('message');
+  var langTr = document.getElementById('langTr');
+  var langEn = document.getElementById('langEn');
+  var bilingual = document.querySelectorAll('[data-en]');
+
+  var t = translations.tr;
+
+  // Channel tag, same contract as the booking page: whatever ?src= says is
+  // passed along and the Edge Function sanitises it before storing.
+  var params = new URLSearchParams(window.location.search);
+  var source = params.get('src');
+
+  function setText(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  function applyLanguage(lang) {
+    t = translations[lang];
+    document.documentElement.lang = t.htmlLang;
+    document.getElementById('metaDescription').setAttribute('content', t.metaDescription);
+
+    for (var i = 0; i < bilingual.length; i++) {
+      var el = bilingual[i];
+      if (!el.hasAttribute('data-tr')) el.setAttribute('data-tr', el.textContent);
+      el.textContent = el.getAttribute(lang === 'en' ? 'data-en' : 'data-tr');
+    }
+
+    setText('labelEmail', t.labelEmail);
+    setText('labelStudio', t.labelStudio);
+    setText('submitBtn', t.submit);
+    setText('fineprint', t.fineprint);
+    setText('linkTerms', t.linkTerms);
+    setText('linkPrivacy', t.linkPrivacy);
+    emailInput.placeholder = t.emailPlaceholder;
+
+    langTr.classList.toggle('active', lang === 'tr');
+    langEn.classList.toggle('active', lang === 'en');
+  }
+
+  langTr.addEventListener('click', function () { applyLanguage('tr'); });
+  langEn.addEventListener('click', function () { applyLanguage('en'); });
+
+  // Turkish by default (the first market), English for everyone else.
+  applyLanguage((navigator.language || 'tr').toLowerCase().indexOf('tr') === 0 ? 'tr' : 'en');
+
+  function showMessage(kind, text) {
+    messageEl.className = 'message ' + kind;
+    messageEl.textContent = text;
+  }
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    messageEl.className = 'message';
+    submitBtn.disabled = true;
+    submitBtn.textContent = t.sending;
+
+    fetch(FUNCTIONS_BASE + '/join-waitlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: emailInput.value.trim(),
+        studio_name: studioInput.value.trim(),
+        website: honeypot.value,
+        source: source
+      })
+    }).then(function (res) {
+      return res.json().then(function (data) { return { status: res.status, data: data }; });
+    }).then(function (result) {
+      if (result.status === 200 && result.data.success) {
+        form.reset();
+        showMessage('success', t.success);
+        // Nothing left to do on this page, so the form stays disabled.
+        submitBtn.textContent = t.submit;
+        return;
+      }
+      if (result.status === 429) {
+        showMessage('error', t.tooMany);
+      } else if (result.data && result.data.error === 'invalid_email') {
+        showMessage('error', t.invalidEmail);
+      } else {
+        showMessage('error', t.genericError);
+      }
+      submitBtn.disabled = false;
+      submitBtn.textContent = t.submit;
+    }).catch(function () {
+      showMessage('error', t.genericError);
+      submitBtn.disabled = false;
+      submitBtn.textContent = t.submit;
+    });
+  });
+})();
+</script>
+</body>
+</html>
